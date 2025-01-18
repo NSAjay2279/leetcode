@@ -1,61 +1,69 @@
 public class Solution {
 
-    // Helper class to store value and index pair
-    static class IndexedNum {
+    // Define a hash table entry class to store key-value pairs
+    static class HashEntry {
+        int key;
         int value;
-        int index;
+        HashEntry next;
 
-        IndexedNum(int value, int index) {
+        public HashEntry(int key, int value) {
+            this.key = key;
             this.value = value;
-            this.index = index;
+            this.next = null;
         }
     }
 
-    // Method to compare two IndexedNum objects for sorting
-    static int compare(IndexedNum a, IndexedNum b) {
-        return a.value - b.value;
-    }
+    // Define the hash table class
+    static class HashTable {
+        private static final int TABLE_SIZE = 10000;
+        private HashEntry[] table;
 
-    // The twoSum method
-    public static int[] twoSum(int[] nums, int target) {
-        int n = nums.length;
-
-        // Create an array of IndexedNum to hold values and their original indices
-        IndexedNum[] indexedNums = new IndexedNum[n];
-        for (int i = 0; i < n; i++) {
-            indexedNums[i] = new IndexedNum(nums[i], i);
+        public HashTable() {
+            table = new HashEntry[TABLE_SIZE];
         }
 
-        // Sort the indexedNums array by the value using bubble sort
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                if (compare(indexedNums[i], indexedNums[j]) > 0) {
-                    // Swap
-                    IndexedNum temp = indexedNums[i];
-                    indexedNums[i] = indexedNums[j];
-                    indexedNums[j] = temp;
+        // Hash function to compute index for a given key
+        public int hash(int key) {
+            return (key % TABLE_SIZE + TABLE_SIZE) % TABLE_SIZE;  // Ensures non-negative index
+        }
+
+        // Insert a key-value pair into the hash table
+        public void insert(int key, int value) {
+            int index = hash(key);
+            HashEntry newEntry = new HashEntry(key, value);
+            newEntry.next = table[index];
+            table[index] = newEntry;
+        }
+
+        // Search for a key in the hash table and return its value if found
+        public int search(int key) {
+            int index = hash(key);
+            HashEntry entry = table[index];
+            while (entry != null) {
+                if (entry.key == key) {
+                    return entry.value;
                 }
+                entry = entry.next;
             }
+            return -1; // Return -1 if the key is not found
         }
+    }
 
-        // Use two pointers to find the target sum
-        int left = 0;
-        int right = n - 1;
+    // Function to find two indices whose values sum to the target
+    public static int[] twoSum(int[] nums, int target) {
+        HashTable hashTable = new HashTable();
+        int[] result = new int[2];
 
-        while (left < right) {
-            int sum = indexedNums[left].value + indexedNums[right].value;
-            
-            if (sum == target) {
-                // Return the indices of the numbers
-                return new int[] { indexedNums[left].index, indexedNums[right].index };
-            } else if (sum < target) {
-                left++;
-            } else {
-                right--;
+        for (int i = 0; i < nums.length; i++) {
+            int complement = target - nums[i];
+            int complementIndex = hashTable.search(complement);
+            if (complementIndex != -1) {
+                result[0] = complementIndex;
+                result[1] = i;
+                return result;
             }
+            hashTable.insert(nums[i], i);
         }
-
-        // Return an empty array if no solution is found
-        return new int[0];
+        return result; // In case no solution is found, though the problem guarantees a solution
     }
 }
