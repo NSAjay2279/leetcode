@@ -1,90 +1,87 @@
-class Twitter {
+public class Twitter {
 
-    // Define constants for maximum number of feeds and users
-    private static final int MAX_FEEDS = 1000;
-    private static final int MAX_USERS = 1000;
-    private static final int MAX_FOLLOWEES = 1000;
+    // Define a Tweet class to store tweetId and timestamp
+    static class Tweet {
+        int tweetId;
+        int timestamp;
 
-    // Data storage
-    private int[][] feeds; // stores userId and tweetId pairs
-    private int feedCount; // keeps track of the number of tweets
-    private int[][] followee; // stores the list of users being followed
-    private int[] followeeCount; // tracks how many users each user follows
+        Tweet(int tweetId, int timestamp) {
+            this.tweetId = tweetId;
+            this.timestamp = timestamp;
+        }
+    }
 
-    // Constructor to initialize the Twitter object
+    // Define a User class to store user details, tweets, and following relationships
+    static class User {
+        int userId;
+        int tweetCount; // To track the number of tweets
+        List<Tweet> tweets = new ArrayList<>(); // List of tweets (store all tweets)
+
+        boolean[] follows = new boolean[501]; // To track users that this user is following
+
+        User(int userId) {
+            this.userId = userId;
+            this.tweetCount = 0;
+        }
+    }
+
+    private User[] users;
+    private int timestamp;
+
+    // Constructor to initialize the Twitter system
     public Twitter() {
-        this.feeds = new int[MAX_FEEDS][2];
-        this.feedCount = 0;
-        this.followee = new int[MAX_USERS][MAX_FOLLOWEES];
-        this.followeeCount = new int[MAX_USERS];
+        users = new User[501]; // Users are indexed from 1 to 500
+        this.timestamp = 0;
+
+        for (int i = 1; i <= 500; i++) {
+            users[i] = new User(i);
+        }
     }
-    
-    // Post a tweet for a user
+
+    // Method to post a new tweet by a user
     public void postTweet(int userId, int tweetId) {
-        if (feedCount < MAX_FEEDS) {
-            feeds[feedCount][0] = userId;
-            feeds[feedCount][1] = tweetId;
-            feedCount++;
-        }
+        User user = users[userId];
+        Tweet tweet = new Tweet(tweetId, timestamp++);
+        // Store the tweet in the user's tweet list
+        user.tweets.add(tweet);
     }
 
-    // Get the news feed for a user
+    // Method to get the 10 most recent tweets in the user's news feed
     public int[] getNewsFeed(int userId) {
-        // Create a static array to store the latest 10 tweet IDs
-        int[] ans = new int[10];
-        int[] followees = new int[MAX_USERS]; // stores the followees of the user
-        int followeeCountForUser = 0;
+        List<Tweet> newsFeed = new ArrayList<>();
+        User user = users[userId];
 
-        // Get the list of followees for the user
-        for (int i = 0; i < followeeCount[userId]; i++) {
-            followees[followeeCountForUser++] = followee[userId][i];
-        }
-        followees[followeeCountForUser++] = userId; // Add the user itself to their own feed
+        // Add user's own tweets
+        newsFeed.addAll(user.tweets);
 
-        // To check if a user is being followed or not
-        boolean[] check = new boolean[MAX_USERS];
-        for (int i = 0; i < followeeCountForUser; i++) {
-            check[followees[i]] = true;
-        }
-
-        int c = 0;
-        int i = feedCount - 1;
-        int retSize = 0;
-
-        // Iterate over the feeds in reverse order (most recent first)
-        while (c < 10 && i >= 0) {
-            if (check[feeds[i][0]]) {
-                ans[retSize] = feeds[i][1]; // Add the tweetId to the answer
-                retSize++;
-                c++;
+        // Add tweets from the users the current user is following
+        for (int followeeId = 1; followeeId <= 500; followeeId++) {
+            if (user.follows[followeeId]) {
+                User followee = users[followeeId];
+                newsFeed.addAll(followee.tweets);
             }
-            i--;
         }
 
-        // Trim the result array to the size of valid results
-        int[] result = new int[retSize];
-        for (int j = 0; j < retSize; j++) {  // Changed variable from i to j
-            result[j] = ans[j];
+        // Sort the tweets by timestamp in descending order
+        newsFeed.sort((a, b) -> b.timestamp - a.timestamp);
+
+        // Collect the 10 most recent tweets
+        int size = Math.min(newsFeed.size(), 10);
+        int[] result = new int[size];
+        for (int i = 0; i < size; i++) {
+            result[i] = newsFeed.get(i).tweetId;
         }
 
         return result;
     }
 
-    // Follow another user
+    // Method to make one user follow another user
     public void follow(int followerId, int followeeId) {
-        followee[followerId][followeeCount[followerId]++] = followeeId;
+        users[followerId].follows[followeeId] = true;
     }
 
-    // Unfollow a user
+    // Method to make one user unfollow another user
     public void unfollow(int followerId, int followeeId) {
-        for (int i = 0; i < followeeCount[followerId]; i++) {
-            if (followee[followerId][i] == followeeId) {
-                for (int j = i; j < followeeCount[followerId] - 1; j++) {
-                    followee[followerId][j] = followee[followerId][j + 1];
-                }
-                followeeCount[followerId]--;
-                break;
-            }
-        }
+        users[followerId].follows[followeeId] = false;
     }
 }
